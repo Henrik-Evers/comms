@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en" ng-app>
+  <head>
+    <title>Chat Example</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/bootstrap-responsive.min.css">
+    <style>
+      body {
+        padding-top: 60px;
+      }
+      #send {
+        width: 20px !important;
+      }
+    </style>
+    <script>
+      function ChatController($scope) {
+        var socket = io.connect();
+        $scope.messages = [];
+        $scope.roster = [];
+        $scope.name = '';
+        $scope.text = '';
+        $scope.mod = 0;
+        $scope.x = 0;
+        var musiclist = ["separateways","takeonme","timewilltell","wheelsky","sweetdreams","onaprayer","finalcountdown","dontstop","askthelonely","whoscryingnow","whycantthis","crazytrain","empire"];
+        var musicdata = {
+          separateways: {
+            src: "https:\//raw.githubusercontent.com/Henrik-Evers/comms/master/client/sounds/SeparateWays.mp3",
+            title: "Separate Ways",
+            artist: "Journey",
+            volume: 0.5
+          },
+          takeonme: {
+            src: "https:\//raw.githubusercontent.com/Henrik-Evers/comms/master/client/sounds/TakeOnMe.mp3",
+            title: "Take On Me",
+            artist: "a-ha",
+            volume: 0.5
+          },
+          timewilltell: {
+            src: "https:\//raw.githubusercontent.com/Henrik-Evers/comms/master/client/sounds/TimeWillTell.mp3",
+            title: "Only Time Will Tell",
+            artist: "Asia",
+            volume: 0.5
+          },
+          wheelsky: {
+            src: "https:\//raw.githubusercontent.com/Henrik-Evers/comms/master/client/sounds/WheelSky.mp3",
+            title: "Wheel In The Sky",
+            artist: "Journey",
+            volume: 0.5
+          },
+          sweetdreams: {
+            src: "https:\//raw.githubusercontent.com/Henrik-Evers/comms/master/client/sounds/SweetDreams.mp3",
+            title: "Sweet Dreams",
+            artist: "Eurythmics",
+            volume: 0.5
+          },
+          onaprayer: {
+            src: "https:\//raw.githubusercontent.com/Henrik-Evers/comms/master/client/sounds/OnAPrayer.mp3",
+            title: "Livin' On A Prayer",
+            artist: "Bon Jovi",
+            volume: 0.5
+          },
+          finalcountdown: {
+            src: "https:\//raw.githubusercontent.com/Henrik-Evers/comms/master/client/sounds/FinalCountdown.mp3",
+            title: "The Final Countdown",
+            artist: "Europe",
+            volume: 0.5
+          },
+          dontstop: {
+            src: "https:\//raw.githubusercontent.com/Henrik-Evers/comms/master/client/sounds/DontStop.mp3",
+            title: "Don't Stop Believing",
+            artist: "Journey",
+            volume: 0.5
+          },
+          askthelonely: {
+            src: "https:\//raw.githubusercontent.com/Henrik-Evers/comms/master/client/sounds/AskTheLonely.mp3",
+            title: "Ask The Lonely",
+            artist: "Journey",
+            volume: 0.5
+          },
+          whoscryingnow: {
+            src: "https:\//raw.githubusercontent.com/Henrik-Evers/comms/master/client/sounds/WhosCryingNow.mp3",
+            title: "Who's Crying Now",
+            artist: "Journey",
+            volume: 0.5
+          },
+          whycantthis: {
+            src: "https:\//raw.githubusercontent.com/Henrik-Evers/comms/master/client/sounds/WhyCantThis",
+            title: "Why Can't This Be Love",
+            artist: "Van Halen",
+            volume: 0.5
+          },
+          crazytrain: {
+            src: "https:\//raw.githubusercontent.com/Henrik-Evers/comms/master/client/sounds/CrazyTrain",
+            title: "Crazy Train",
+            artist: "Ozzy Osbourne",
+            volume: 0.5
+          },
+          empire: {
+            src: "https:\//raw.githubusercontent.com/Henrik-Evers/comms/master/client/sounds/Empire",
+            title: "Empire",
+            artist: "Queensryche",
+            volume: 0.5
+          }
+        };
+          // this conditional checks whether a username has been saved to localStorage
+        if (window.localStorage.getItem("chatUserName") === null) {
+          // if there is no username saved, prompt the user
+          $scope.name = prompt("What is your name? Your username must 16 characters or less");
+          // repetitively prompts the user to enter a username that is <= 16 characters
+          if ($scope.name.length > 16) {
+            $scope.name = prompt("Enter a username of 16 characters or less or is not an admin user name");
+          }
+          // save the username to localStorage, so no prompts are needed later
+          window.localStorage.setItem('chatUserName', $scope.name);
+        }
+        else {
+          // if a username has been saved, retrieve it and use it
+          $scope.name = window.localStorage.getItem("chatUserName");
+        }
+
+        socket.on('connect', function () {
+          socket.emit('identify',$scope.name);
+          $scope.setName();
+          $scope.messages.push({name: "Welcome Message", text:"Hello. /clear to clear messages (clears your messages only). /help to show a list of available commands. Do not use /makeSelfAdmin because I want to be the only admin."});
+          $scope.$apply();
+          /*var data = {name:'Server', text:$scope.name + ' has joined the server.'};
+          socket.emit('message', data);*/
+        });
+        
+        socket.on('music', function(datas) {
+          var sound = new Audio(datas.src);
+          sound.volume = $scope.volume;
+          sound.play();
+          $scope.messages.push({name: "Server", text:"Now playing."});
+        });
+        
+        socket.on('clear', function () {
+          $scope.messages = [];
+          $scope.messages.push({name:"Server",text:"Messages have been cleared."})
+        });
+        
+        socket.on('message', function (msg) {
+          $scope.messages.push(msg);
+          $scope.$apply();
+          var scrollBottom = $(window).scrollTop() + $(window).height();
+          $(window).scrollTop(scrollBottom)
+        });
+
+        socket.on('roster', function (names) {
+          $scope.roster = names;
+          $scope.$apply();
+        });
+        
+        socket.on('makeSelfAdmin', function([]) {
+          socket.emit('message', 'I\'m such a rulebreaker! I typed in exactly what the welcome message said not to!');
+        });
+        
+        socket.on('profaned', function(text,name) {
+          if (name !== $scope.name) {}
+          else {
+            $scope.text = text;
+            socket.emit('message',$scope.text);
+          }
+        });
+
+        $scope.send = function send() {
+          var commandUsed = 0;
+          console.log('Sending message:', $scope.text);
+          function getRandom(min, max) {
+            min = Math.ceil(min);
+            max = Math.floor(max);
+            return Math.floor(Math.random() * (max - min)) + min; //The maximum is exclusive and the minimum is inclusive
+          }
+          if ($scope.text == "/c") {
+            if (window.localStorage.getItem('discipleofchoi') == 'true') {
+              socket.emit('clear');
+              $scope.messages = [];
+              socket.emit('message','Used an admin command to clear the server chat.');
+              $scope.messages.push({name:"Server",text:"Messages have been cleared."});
+            }
+            else {
+              socket.emit('message', 'I tried to use an admin command, but I\'m not an admin!');
+            }
+            commandUsed = -1;
+          }
+          if ($scope.text == "/clear") {
+            commandUsed = -1;
+            $scope.messages = [];
+            $scope.messages.push({name:"Server",text:"Messages have been cleared."});
+          }
+          if ($scope.text == "/help") {
+            commandUsed = -1;
+            $scope.messages.push({name:"Server",text:"/clear to clear messages (clears your messages only). /help to show a list of available commands. /makeSelfAdmin initiates admin mode."});
+          }
+          if ($scope.text == "/play") {
+            commandUsed = -1;
+            $scope.x = getRandom(1,musiclist.length);
+            if ($scope.x === 1) {
+              socket.emit('music',musicdata.separateways);
+            }
+            if ($scope.x === 2) {
+              socket.emit('music',musicdata.takeonme);
+            }
+            if ($scope.x === 3) {
+              socket.emit('music',musicdata.timewilltell);
+            }
+            if ($scope.x === 4) {
+              socket.emit('music',musicdata.wheelsky);
+            }
+            if ($scope.x === 5) {
+              socket.emit('music',musicdata.sweetdreams);
+            }
+            if ($scope.x === 6) {
+              socket.emit('music',musicdata.onaprayer);
+            }
+            if ($scope.x === 7) {
+              socket.emit('music',musicdata.finalcountdown);
+            }
+            if ($scope.x === 8) {
+              socket.emit('music',musicdata.dontstop);
+            }
+            if ($scope.x === 9) {
+              socket.emit('music',musicdata.askthelonely);
+            }
+            if ($scope.x === 10) {
+              socket.emit('music',musicdata.whoscryingnow);
+            }
+            if ($scope.x === 11) {
+              socket.emit('music',musicdata.whycantthis);
+            }
+            if ($scope.x === 12) {
+              socket.emit('music',musicdata.crazytrain);
+            }
+            if ($scope.x === 13) {
+              socket.emit('music',musicdata.empire);
+            }
+          }
+          if ($scope.text == "/makeSelfAdmin") {
+            commandUsed = -1;
+            $scope.name += ', Thou Whomst Tried to Cheat';
+            socket.emit('identify', $scope.name);
+            window.localStorage.setItem('chatUserName', $scope.name);
+            socket.emit('makeSelfAdmin');
+            socket.emit('message', 'I\'m such a rulebreaker! I typed in exactly what the welcome message said not to!');
+            document.getElementById("audio").play();
+          }
+          if ($scope.text == "/succeedEggHunt") {
+            $scope.name = $scope.name + ', Hunter of Eggs';
+            socket.emit('identify', $scope.name);
+            socket.emit('egghunt',$scope.name);
+            commandUsed = -1;
+          }
+          if ($scope.text == "/nasdaq1985asdfrewq") {
+            if (window.localStorage.getItem('discipleofchoi') === 'true') {
+              $scope.name = prompt("Enter name:");
+              socket.emit('identify', $scope.name);
+              window.localStorage.setItem('chatUserName', $scope.name);
+            }
+            else {
+              socket.emit('message', 'I tried to use an admin command, but I\'m not an admin!');
+            }
+            commandUsed = -1;
+          }
+          if ($scope.text == "/hailchoi") {
+            window.localStorage.setItem('discipleofchoi', 'true');
+            commandUsed = -1;
+          }
+          if ($scope.text == "/unhailchoi") {
+            window.localStorage.setItem('discipleofchoi', 'false');
+            commandUsed = -1;
+          }
+          if ($scope.text == "/redact") {
+            $scope.x = '█';
+            var text = prompt('What text do you want to redact?');
+            var text2send = "";
+            for (var i=0;i<text.length;i++) {
+              text2send = text2send + $scope.x;
+            }
+            socket.emit('message', text2send);
+            commandUsed = -1;
+          }
+          if ($scope.text == "/profanity") {
+            $scope.x = prompt('What do you want to un-filter?');
+            socket.emit('profanity ',$scope.x,$scope.name);
+            commandUsed = -1;
+          }
+          if (commandUsed === 0) {
+            socket.emit('message', $scope.text, window.localStorage.getItem('discipleofchoi'));
+          }
+          commandUsed = 0;
+          $scope.text = '';
+        };
+
+        $scope.setName = function setName() {
+          socket.emit('identify', $scope.name);
+        };
+      }
+    </script>
+  </head>
+  <body>
+    <div class="container" ng-controller="ChatController">
+      <div class="navbar navbar-fixed-top navbar-inverse">
+        <div class="navbar-inner">
+          <div class="pull-right">
+            <a href="https://c9.io" class="brand">Cloud9 IDE</a>
+          </div>
+        </div>
+      </div>
+      <div class="page-header">
+        <h1>Comms</h1>
+      </div>
+      <div class="row">
+        <div class="span3">
+          <ul class="nav nav-list well">
+            <li class="nav-header">Local Users</li>
+            <li ng-repeat="user in roster" ng-bind="user">
+            </li>
+          </ul>
+        </div>
+        <div class="span9">
+          <table class="table table-striped table-bordered">
+            <thead>
+              <tr>
+                <th class="span2">Name</th>
+                <th class="span7">Text</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr ng-repeat="msg in messages">
+                <td class="span2" ng-bind="msg.name"></td>
+                <td class="span7" ng-bind="msg.text"></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="row controls">
+            <form ng-submit="send()">
+              <div class="input-append span7">
+                <input type="text" id="message" class="span9" ng-model="text" placeholder="Message">
+                <input type="image" id="send" class="span1 btn btn-primary" src="/img/sendicon.png" height="20px" width="20px" ng-disabled="!text">
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/angular.min.js"></script>
+  </body>
+</html>
